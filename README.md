@@ -1,79 +1,58 @@
-```markdown
+# Parallel Deep Learning Training - Data Parallelism Implementation
 
-# Parallel Deep Learning Training
+## PROJECT OVERVIEW
+ResNet-18 training on CIFAR-10 comparing serial baseline vs. data parallelism using PyTorch DDP.
 
-Data parallelism implementation for ResNet-18 on CIFAR-10 using PyTorch DDP.
-
-## Setup
-
+## SETUP INSTRUCTIONS
+1. Activate virtual environment:
 ```bash
-
-python3 -m venv venv
-
 source venv/bin/activate
-
+```
+2. Install dependencies:
+```bash
 pip install torch torchvision pandas matplotlib tqdm
-
 ```
 
-## Run Experiments
-
-\*\*Serial GPU baseline (5 epochs):\*\*
-
+## RUN EXPERIMENTS
+- **Serial GPU baseline (5 epochs):**
 ```bash
-
 python train.py --epochs 5 --batch-size 256 --device cuda --mode serial
-
 ```
-
-\*\*DDP validation (1 GPU, 10 epochs):\*\*
-
+- **DDP validation on 1 GPU (10 epochs):**
 ```bash
-
-torchrun --nproc\_per\_node=1 train.py --epochs 10 --batch-size 256 --device cuda
-
+torchrun --nproc_per_node=1 train.py --epochs 10 --batch-size 256 --device cuda
 ```
-
-\*\*CPU parallelism speedup (6 cores):\*\*
-
+- **CPU parallelism speedup demonstration (6 cores):**
 ```bash
-
-torchrun --nproc\_per\_node=6 train.py --epochs 1 --batch-size 64 --device cpu
-
+torchrun --nproc_per_node=6 train.py --epochs 1 --batch-size 64 --device cpu
 ```
 
-## Generate Plots
-
+## GENERATE PLOTS
 ```bash
-
-python plot\_results.py
-
+python plot_results.py
 ```
+Outputs saved to:
+- `report/figures/loss_accuracy_comparison.png`
+- `report/figures/epoch_time_comparison.png`
 
-Outputs: \`report/figures/loss\_accuracy\_comparison.png\`, \`epoch\_time\_comparison.png\`
+## EXPECTED RESULTS (from your runs)
+| Configuration | Epochs | Time per Epoch | Test Accuracy |
+| --- | --- | --- | --- |
+| Serial GPU (epoch 5) | 5 | 84.25s | 76.71% |
+| DDP 1-GPU (epoch 5) | 5 | 99.51s | 73.14% (+18% overhead on single GPU) |
+| Serial CPU (epoch 1) | 1 | 833.31s | 37.36% |
+| DDP 6-Core CPU (epoch 1) | 1 |198.43s (~4.2x speedup vs serial CPU)| |
 
-## Expected Results
+## CRITICAL NOTES
+- Store project in WSL2 native filesystem (`~/projects/`) NOT `/mnt/c/` to avoid permission errors and slow I/O.
+- Single-GPU DDP shows overhead (+18%) — real speedup requires >=2 physical GPUs.
+- CPU parallelism demonstrates *REAL* speedup (4.2x on 6 cores), satisfying assignment requirements.
+- All training logs saved to: `experiments/logs/`.
 
-| Configuration | Epoch Time | Speedup | Accuracy (Epoch 5) |
-
-|---------------|------------|---------|---------------------|
-
-| Serial GPU | 84.3 s | 1.00× | 76.71% |
-
-| DDP 1-GPU | 99.5 s | 0.85×\* | 73.14% |
-
-| Serial CPU | 833.3 s | 1.00× | 37.36% (epoch 1) |
-
-| DDP 6-Core CPU| 198.4 s | 4.20× | ~68% (epoch 1) |
-
-*\\\*Overhead on single GPU; real speedup requires ≥2 physical devices\*
-
-## Notes
-
-- Store project in WSL2 native filesystem (\`~/projects/\`), \*\*NOT\*\* \`/mnt/c/`
-
-- CPU parallelism demonstrates \*\*real speedup\*\* (4.20× on 6 cores) satisfying assignment requirements
-
-- All CSV logs saved to \`experiments/logs/\`
-
-```
+## REPRODUCIBILITY
+All experiments use identical hyperparameters:
+- **Model:** ResNet-18 (adapted for 32x32 images)
+- **Optimizer:** SGD (`lr=0.1`, `momentum=0.9`, `weight_decay=5e-4`)
+- **Scheduler:** Cosine annealing
+- **Random seed:** `42`
+- **Dataset:** CIFAR-10 with standard augmentations.
