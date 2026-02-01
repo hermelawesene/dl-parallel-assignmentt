@@ -1,0 +1,2 @@
+epoch,train_loss,train_acc,test_loss,test_acc,epoch_time_sec,world_size
+1,2.0033743977355956,28.088,1.6677959869384766,37.36,833.3130223751068,1

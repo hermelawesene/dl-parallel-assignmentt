@@ -1,0 +1,3 @@
+Serial time: 84.25s
+Parallel (2 workers) time: 1035.11s
+Speedup: 0.08x
