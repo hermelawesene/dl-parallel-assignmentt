@@ -1,54 +1,79 @@
-# Parallelization of Deep Learning Models
-**Take-Home Assignment Implementation**  
-*Data parallelism evaluation for ResNet-18 training on CIFAR-10 using PyTorch DDP*
+```markdown
 
----
+# Parallel Deep Learning Training
 
-## 📌 Overview
-This repository implements and evaluates data parallelism for deep learning training on shared-memory systems. We compare:
-- **Serial baseline**: Single-device training (GPU/CPU)
-- **Parallel implementation**: `DistributedDataParallel` (DDP) with Gloo (CPU) and NCCL (GPU) backends
-- **Key result**: 4.20× speedup on 6 CPU cores vs. serial CPU baseline with identical convergence behavior
+Data parallelism implementation for ResNet-18 on CIFAR-10 using PyTorch DDP.
 
----
-
-## ⚙️ Prerequisites
-
-### Hardware Requirements
-| Component | Minimum | Recommended |
-|-----------|---------|-------------|
-| CPU | 4 cores | 6+ cores (Intel i7/i9 or AMD Ryzen) |
-| GPU | None (CPU-only mode) | NVIDIA GPU with ≥4GB VRAM |
-| RAM | 16 GB | 32 GB |
-| Storage | 5 GB free space | NVMe SSD recommended |
-
-> **Note for Windows users**: This project **requires WSL2 Ubuntu** due to PyTorch DDP limitations on native Windows. See [WSL2 Setup Guide](#wsl2-setup-guide-windows-only) below.
-
-### Software Requirements
-- Ubuntu 22.04 LTS (native or WSL2)
-- Python 3.10+
-- NVIDIA Driver ≥535.xx (for GPU support on WSL2)
-- CUDA 11.8+ (optional but recommended for GPU)
-
----
-
-## 🚀 Quick Start (WSL2 Ubuntu)
+## Setup
 
 ```bash
-# 1. Clone repository (if not already cloned)
-cd ~/projects
-git clone https://github.com/hermelawesene/dl-parallel-assignment.git
-cd dl-parallel-assignment
 
-# 2. Create virtual environment
 python3 -m venv venv
+
 source venv/bin/activate
 
-# 3. Install dependencies
-pip install -r requirements.txt
+pip install torch torchvision pandas matplotlib tqdm
 
-# 4. Verify GPU access (optional but recommended)
-python -c "import torch; print(f'GPU available: {torch.cuda.is_available()}')"
+```
 
-# 5. Run experiments
-./run_experiments.sh  # Executes all 4 experiments below
+## Run Experiments
+
+\*\*Serial GPU baseline (5 epochs):\*\*
+
+```bash
+
+python train.py --epochs 5 --batch-size 256 --device cuda --mode serial
+
+```
+
+\*\*DDP validation (1 GPU, 10 epochs):\*\*
+
+```bash
+
+torchrun --nproc\_per\_node=1 train.py --epochs 10 --batch-size 256 --device cuda
+
+```
+
+\*\*CPU parallelism speedup (6 cores):\*\*
+
+```bash
+
+torchrun --nproc\_per\_node=6 train.py --epochs 1 --batch-size 64 --device cpu
+
+```
+
+## Generate Plots
+
+```bash
+
+python plot\_results.py
+
+```
+
+Outputs: \`report/figures/loss\_accuracy\_comparison.png\`, \`epoch\_time\_comparison.png\`
+
+## Expected Results
+
+| Configuration | Epoch Time | Speedup | Accuracy (Epoch 5) |
+
+|---------------|------------|---------|---------------------|
+
+| Serial GPU | 84.3 s | 1.00× | 76.71% |
+
+| DDP 1-GPU | 99.5 s | 0.85×\* | 73.14% |
+
+| Serial CPU | 833.3 s | 1.00× | 37.36% (epoch 1) |
+
+| DDP 6-Core CPU| 198.4 s | 4.20× | ~68% (epoch 1) |
+
+*\\\*Overhead on single GPU; real speedup requires ≥2 physical devices\*
+
+## Notes
+
+- Store project in WSL2 native filesystem (\`~/projects/\`), \*\*NOT\*\* \`/mnt/c/`
+
+- CPU parallelism demonstrates \*\*real speedup\*\* (4.20× on 6 cores) satisfying assignment requirements
+
+- All CSV logs saved to \`experiments/logs/\`
+
+```
